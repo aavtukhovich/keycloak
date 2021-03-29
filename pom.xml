@@ -250,6 +250,7 @@
         <module>adapters</module>
         <module>authz</module>
         <module>misc</module>
+        <module>federation/kalildap</module>
     </modules>
 
     <dependencyManagement>
