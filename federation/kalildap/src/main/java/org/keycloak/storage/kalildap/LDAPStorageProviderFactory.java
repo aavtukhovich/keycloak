@@ -76,7 +76,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
 
 
     private static final Logger logger = Logger.getLogger(LDAPStorageProviderFactory.class);
-    public static final String PROVIDER_NAME = "Belaruskali ldap federation";
+    public static final String PROVIDER_NAME = "kali-ldap";
 
     private LDAPIdentityStoreRegistry ldapStoreRegistry;
 
