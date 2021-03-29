@@ -250,7 +250,6 @@
         <module>adapters</module>
         <module>authz</module>
         <module>misc</module>
-        <module>federation/kalildap</module>
     </modules>
 
     <dependencyManagement>
@@ -1730,7 +1729,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>1.7</version>
+                        <version>3.0.0</version>
                         <executions>
                             <execution>
                                 <id>set-product-filename-version</id>

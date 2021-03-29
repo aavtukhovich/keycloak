@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-org.keycloak.storage.ldap.mappers.LDAPStorageMapperSpi
+org.keycloak.storage.kalildap.mappers.LDAPStorageMapperSpi
