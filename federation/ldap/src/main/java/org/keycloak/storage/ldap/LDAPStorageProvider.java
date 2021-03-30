@@ -17,12 +17,7 @@
 
 package org.keycloak.storage.ldap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -288,7 +283,45 @@ public class LDAPStorageProvider implements UserStorageProvider,
         LDAPUtils.checkUuid(ldapUser, ldapIdentityStore.getConfig());
         user.setSingleAttribute(LDAPConstants.LDAP_ID, ldapUser.getUuid());
         user.setSingleAttribute(LDAPConstants.LDAP_ENTRY_DN, ldapUser.getDn().toString());
-
+        List<String> reversedUserDN = Arrays.asList(user.getFirstAttribute(LDAPConstants.LDAP_ENTRY_DN).split(","));
+        Collections.reverse(reversedUserDN);
+        GroupModel generalGroup = null;
+        if (realm.getGroups().size() == 0 || realm.getTopLevelGroups().size() == 0) {
+            generalGroup = realm.createGroup("kali");
+        } else {
+            generalGroup = realm.getTopLevelGroups().get(0);
+        }
+        List<String> ous = new ArrayList<>();
+        for (String ou : reversedUserDN) {
+            if (ou.substring(0, 3).equalsIgnoreCase("ou=")) {
+                ous.add(ou.replace(ou.substring(0, 3), ""));
+//                logger.infof(ou + " - {0.3} " + ou.substring(0, 3) + " | " + ou.replace(ou.substring(0, 3), "") + "\n");
+            }
+        }
+        GroupModel lastGroup = null;
+        for (int i = 0; i < ous.size(); i++) {
+            if (i == 0) {
+                if (generalGroup.getName().equalsIgnoreCase(ous.get(i))) {
+                    lastGroup = generalGroup;
+                } else {
+                    GroupModel newGroup = realm.createGroup(ous.get(i));
+                    generalGroup.addChild(newGroup);
+                    lastGroup = newGroup;
+                }
+                continue;
+            }
+            GroupModel cur = searchGroupByName(lastGroup, ous.get(i));
+            if (cur == null) {
+                GroupModel newGroup = realm.createGroup(ous.get(i));
+                lastGroup.addChild(newGroup);
+                lastGroup = newGroup;
+            } else {
+                lastGroup = cur;
+            }
+        }
+        if (lastGroup != null) {
+            user.joinGroup(lastGroup);
+        }
         // Add the user to the default groups and add default required actions
         UserModel proxy = proxy(realm, user, ldapUser, true);
         DefaultRoles.addDefaultRoles(realm, proxy);
@@ -303,7 +336,14 @@ public class LDAPStorageProvider implements UserStorageProvider,
 
         return proxy;
     }
-
+    protected GroupModel searchGroupByName(GroupModel base, String name) {
+        for (GroupModel currentGroup : base.getSubGroups()) {
+            if (currentGroup.getName().equalsIgnoreCase(name)) {
+                return currentGroup;
+            }
+        }
+        return null;
+    }
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
         if (editMode == UserStorageProvider.EditMode.READ_ONLY || editMode == UserStorageProvider.EditMode.UNSYNCED) {
